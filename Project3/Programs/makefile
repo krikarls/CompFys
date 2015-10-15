@@ -18,7 +18,7 @@ LDLIBS = -larmadillo
 
 # build executable
 TARGET = project3
-SRCS = main.cpp gaussian_quad.cpp monte_carlo.cpp
+SRCS = main.cpp gaussian_quadrature.cpp monte_carlo.cpp
 OBJS = $(subst .cpp,.o,$(SRCS))
 
 
