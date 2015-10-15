@@ -1,0 +1,29 @@
+
+Hello,
+ 
+user of my program (not world this time)!
+
+This program is very simple. 
+
+To compile: Run "make" in the terminal
+
+Then you will be asked to choose between Gaussian quadrature- and Monte carlo-methods.
+	
+	For Gaussian quadrature
+		Enter "0"
+
+		Then enter the integration limits [a,b] (will only be used for GQ-Legendre) and number of 
+		integration points in the following order:
+
+		a
+		b
+		N
+
+	For Monte carlo
+		Enter "1"
+
+		Then enter number of monte carlo cycles, N
+
+		N	
+
+
