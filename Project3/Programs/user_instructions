@@ -5,7 +5,9 @@ user(not world this time) of my program !
 
 This program is very simple. 
 
-To compile: Run "make" in the terminal
+To compile: Run "make" in the terminal.
+
+Run program, "project3".
 
 Then you will be asked to choose between Gaussian quadrature- and Monte carlo-methods.
 	
