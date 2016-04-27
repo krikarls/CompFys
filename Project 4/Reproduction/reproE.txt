@@ -1,0 +1,3 @@
+The program was run with
+./project4 e 60
+and return the text file testE.txt

@@ -1,0 +1,4 @@
+Program was run with 
+./project4 c 0.2 
+and returned the text-file
+testC.txt

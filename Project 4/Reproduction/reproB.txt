@@ -1,0 +1,4 @@
+Part b was run with parameters 
+./project4 b 1
+and the returned this output from the console
+-1.994 0.9985 0.047856 0.002991

@@ -1,0 +1,65 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 2.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \sortlist{entry}{nyt}
+    \entry{farnell2005monte}{article}{}
+      \name{labelname}{2}{}{%
+        {{hash=41304d12b7a991681033c036bfb4b2be}{Farnell}{F\bibinitperiod}{L}{L\bibinitperiod}{}{}{}{}}%
+        {{hash=92820ab2e093054c36b6258c46c8c1eb}{Gibson}{G\bibinitperiod}{WG}{W\bibinitperiod}{}{}{}{}}%
+      }
+      \name{author}{2}{}{%
+        {{hash=41304d12b7a991681033c036bfb4b2be}{Farnell}{F\bibinitperiod}{L}{L\bibinitperiod}{}{}{}{}}%
+        {{hash=92820ab2e093054c36b6258c46c8c1eb}{Gibson}{G\bibinitperiod}{WG}{W\bibinitperiod}{}{}{}{}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{94f712da260c644c2a962b3fb2fe8ff2}
+      \strng{fullhash}{94f712da260c644c2a962b3fb2fe8ff2}
+      \field{sortinit}{F}
+      \field{labeltitle}{Monte Carlo simulation of diffusion in a spatially nonhomogeneous medium: A biased random walk on an asymmetrical lattice}
+      \field{journaltitle}{Journal of Computational Physics}
+      \field{number}{1}
+      \field{title}{Monte Carlo simulation of diffusion in a spatially nonhomogeneous medium: A biased random walk on an asymmetrical lattice}
+      \field{volume}{208}
+      \field{year}{2005}
+      \field{pages}{253\bibrangedash 265}
+    \endentry
+    \entry{thompson2000brain}{book}{}
+      \name{labelname}{1}{}{%
+        {{hash=2843e38fb3ee67f7e4c7a62b397b97ac}{Thompson}{T\bibinitperiod}{Richard\bibnamedelima F}{R\bibinitperiod\bibinitdelim F\bibinitperiod}{}{}{}{}}%
+      }
+      \name{author}{1}{}{%
+        {{hash=2843e38fb3ee67f7e4c7a62b397b97ac}{Thompson}{T\bibinitperiod}{Richard\bibnamedelima F}{R\bibinitperiod\bibinitdelim F\bibinitperiod}{}{}{}{}}%
+      }
+      \list{publisher}{1}{%
+        {Macmillan}%
+      }
+      \strng{namehash}{2843e38fb3ee67f7e4c7a62b397b97ac}
+      \strng{fullhash}{2843e38fb3ee67f7e4c7a62b397b97ac}
+      \field{sortinit}{T}
+      \field{labeltitle}{The brain: a neuroscience primer}
+      \field{title}{The brain: a neuroscience primer}
+      \field{year}{2000}
+    \endentry
+  \endsortlist
+\endrefsection
+\endinput
+

@@ -1,0 +1,1 @@
+This folder contains reproductions of the data from the program. Each repro[A-B].txt contains input and eventual output to terminal. To get the same results the parameter global_seed in src/main.cpp needs to be changed to 42.

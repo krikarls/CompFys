@@ -1,0 +1,871 @@
+\documentclass[11pt,a4paper,final]{article}
+\usepackage[english]{babel} % Using babel for hyphenation
+\usepackage{lmodern} % Changing the font
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{cleveref}
+
+%\usepackage[moderate]{savetrees} % [subtle/moderate/extreme] really compact writing
+\usepackage{framed}
+\usepackage{tcolorbox}
+\tcbuselibrary{hooks}
+\usepackage[parfill]{parskip} % Removes indents
+\usepackage{amsmath} % Environment, symbols etc...
+\usepackage{amssymb}
+\usepackage{float} % Fixing figure locations
+\usepackage{multirow} % For nice tables
+%\usepackage{wasysym} % Astrological symbols
+\usepackage{graphicx} % For pictures etc...
+\usepackage{enumitem} % Points/lists
+\usepackage{physics} % Typesetting of mathematical physics examples: 
+                     % \bra{}, \ket{}, expval{}
+\usepackage{url}
+
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\definecolor{red}{RGB}{255,10,10}
+
+% To include code(-snippets) with æøå
+\usepackage{listings}
+\lstset{
+language=c++,
+showspaces=false,
+showstringspaces=false,
+frame=l,
+}
+
+\tolerance = 5000 % Bedre tekst
+\hbadness = \tolerance
+\pretolerance = 2000
+
+\numberwithin{equation}{section}
+
+\newcommand{\conj}[1]{#1^*}
+\newcommand{\ve}[1]{\mathbf{#1}} % Vektorer i bold
+\let\oldhat\hat
+\renewcommand{\hat}[1]{\oldhat{#1}}
+\newcommand{\trans}[1]{#1^\top}
+\newcommand{\herm}[1]{#1^\dagger}
+
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\bigO}[1]{\mathcal{O}\left( #1 \right)}
+
+\newcommand{\di}{\mathrm{d}}
+\newcommand{\magM}{\mathcal{M}}
+
+\newcounter{algcounter}
+\renewcommand{\thealgcounter}{\Roman{algcounter}}
+
+\newenvironment{algorithm}{%
+\refstepcounter{algcounter}
+\begin{tcolorbox}
+\centerline{Algorithm \thealgcounter}\vspace{2mm}
+}
+{\end{tcolorbox}}
+
+\newcommand{\figurewidth}{.85\textwidth}
+
+\title{FYS3150/4150\\Computational Physics\\Project 4}
+\author{Magnus Ulimoen \& Krister Stræte Karlsen\\
+Candidate numbers 33 \& 63}
+\date{\today}
+
+\begin{document}
+\tcbset{before app=\parfillskip0pt}
+\maketitle
+
+\begin{abstract}
+This project explores the Ising model applied to spins in two dimensions.
+The critical temperature for the Ising model is determined to be 
+$T_c =  2.27001284722$, which has a relative error $0.0004$ from the result 
+of Lars Onsager. The energy, magnetisation, heat-capacity and 
+magnetic susceptibility has been found for lattice sizes of 20x20, 40x40,
+60x60, 80x80 and 100x100 near this temperature.
+\end{abstract}
+
+
+
+\section{Introduction}
+
+The Ising model is a simple model of a solid. A lattice with elements 
+each have a spin. This interaction between the different spin states
+give an energy. The net amount of spin in the 
+lattice leads to an overall magnetisation. 
+
+Which energy the lattice 
+is permitted to have is controlled by a large heat reservoir. If 
+the temperature is large, the spins tends to be randomly aligned, 
+and there is no net magnetisation. The highest temperature which 
+allows a magnetisation is called the Curie temperature, and is 
+connected to a phase transition.
+
+The programs belonging to this report is available at 
+\url{https://github.com/mulimoen/FYS3150CompPhy} under Project 4.
+
+\section{Theory}
+
+The energy of a spin system in the Ising model is given by
+\begin{gather}
+E = -J\sum_{\expval{kl}}^N s_k s_l
+\end{gather}
+Here J is the energy shared between two lattice points. The elements 
+$s_i = \pm 1$ gives the spin associated with 
+the lattice point.
+
+The summation $\expval{kl}$ only sums over pairwise interactions.
+Another way of writing the sum is to only consider the forward 
+interaction between the lattice points,
+\begin{gather}
+E = -J \sum_{k}^N s_k s_{k+1}
+\label{eq:Esum}
+\end{gather}
+This sum faces a boundary problem. In our model we are solving this 
+by using periodic boundary conditions,
+\begin{gather}
+s_k = s_{k \pm L}
+\label{eq:boundary}
+\end{gather}
+An illustration of this is visible in figure \ref{fig:spin_neighbours_full}.
+Here the spin $S_2$ faces $S_4$ both on the upper and lower site.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.15]{pics/simple_lattice.png}
+\caption{ Illustration of the simple, ''$L=2$''-lattice and a graphical interpretation the periodic boundary conditions.}
+\label{fig:spin_neighbours_full}
+\end{figure}
+
+The magnetisation of the lattice is given by the sum of the spins,
+\begin{gather}
+\magM = \sum_i s_i
+\label{eq:Msum}
+\end{gather}
+
+
+\subsection{Statistical mechanics}
+In order to find how the energy and magnetisation is in the steady-state
+solution some results from statistical mechanics is employed. These 
+give expectation values in the thermodynamic limit, which is the limit 
+where the number of samplings and particles goes to infinity.
+
+The steady-state solution has a close connection to the temperature 
+of the system. If our system is connected to a heat reservoir, we can
+give the probability by the Boltzmann probability function,
+where he probability to find the system in a microstate is given by
+\begin{gather}
+p(i) = \frac{e^{-E_i\beta}}{Z}
+\end{gather}
+Where $E_i$ is the energy for the microstate, $\beta = \frac{1}{kT}$ 
+and Z is the partition function. The partition function works as the 
+normalisation factor, and is given by
+\begin{gather}
+Z = \sum_i \exp(-\beta E_i)
+\end{gather}
+
+\subsubsection{Energy}
+The energy of the system can be calculated from the partition function
+by the equation
+\begin{gather}
+\expval{E} = -\frac{d \ln Z}{d \beta}
+\end{gather}
+One useful quantity is the heat capacity, how much energy the system 
+retains when changing the temperature. This quantity is given by
+\begin{gather}
+C_v = \frac{d\expval{E}}{dT} 
+= -\frac{\beta^2}{k}\frac{d\expval{E}}{d\beta}
+ = \frac{\beta^2}{k}\frac{d^2\ln Z}{d^2\beta}
+\end{gather}
+Another way to write this
+\begin{gather}
+C_v = N\beta^2 \left(\expval{E^2} -\expval{E}^2\right)
+\end{gather}
+with $\expval{E}$ given per particle.
+
+
+
+
+\subsubsection{Magnetisation}
+From the partition function the magnetisation can be found. If all the 
+states with a certain magnetisation is known, 
+\begin{gather}
+\expval{\magM} = \sum_i m_i p(m_i) = \sum_i \frac{M_i e^{-E_i\beta}}{Z}
+\end{gather}
+Another important quantity is the susceptibility. This is how much 
+magnetisation is reatained when the temperature changes,
+\begin{gather}
+\chi = \frac{d \expval{\magM}}{d T} 
+= -\frac{\beta^2}{k}\frac{d\expval{\magM}}{d\beta}
+\end{gather}
+
+\begin{gather}
+\chi = N\beta^2 \left(\expval{M^2} - \expval{M}^2\right)
+\end{gather}
+
+
+\subsection{Example of a system}
+For the simple case of only two spins in each dimension($L=2$)
+the energies are summed by \eqref{eq:Esum}.
+The energy a function of the different spins,
+\begin{equation}
+E = -2J(s_1s_2 + s_1s_3 + s_2s_4 + s_3s_4)
+\end{equation}
+This has symmetries with regards to which spin is up.
+Listing up all the different spin configurations, their degeneracy 
+and the energies,
+\begin{gather*}
+\text{Spin configuration} = 
+\begin{cases}
+n_{up} = 0, \quad d=1, \quad E = -8J\\
+n_{up} = 1, \quad d=4, \quad E = 0\\
+n_{up} = 2, \quad d=6, \quad 
+\begin{cases} 
+\text{diag} \quad d = 2, \quad E = 8J\\
+\text{non-diag} \quad d = 4, \quad E = 0
+\end{cases}\\
+n_{up} = 3, \quad d=4, \quad E = 0\\
+n_{up} = 4, \quad d=1, \quad E = -8J
+\end{cases}
+\end{gather*}
+The energies with their degeneracy is then
+\begin{gather}
+E = 
+\begin{cases}
+-8J, \quad d = 2\\
+\phantom{-}0, \quad\quad d = 12\\
+\phantom{-}8J, \quad d = 2
+\end{cases}
+\end{gather}
+And the (absolute) magnetisation is
+\begin{gather}
+\abs{\magM} = 
+\begin{cases}
+4, \quad d = 2,\quad E = -8J\\
+2, \quad d = 8, \quad E = 0\\
+0, \quad
+\begin{cases}
+d = 2, \quad E = 8J\\
+d = 4, \quad E = 0
+\end{cases}
+\end{cases}
+\end{gather}
+The partition function for this system is 
+\begin{gather}
+Z = \sum_i d(i) e^{-E_i\beta} = 2e^{+8J\beta}+12e^{0}+2e^{-8J\beta}
+ = 12 + 4\cosh(8J\beta)
+\end{gather}
+
+
+\subsubsection{Analytical solutions}
+Using the partition function we obtain an expression for the energy;
+\begin{gather}
+\expval{E} = \frac{-32J\sinh(8J\beta)}{4\cosh(8J\beta)+12}
+\end{gather}
+magnetisation;
+\begin{gather}
+\expval{\abs{\magM}} = \frac{\abs{\magM_i}e^{-E_i\beta}}{Z}
+= \frac{4e^{8J\beta} + 2}{12+4\cosh(8J\beta))}
+\label{eq:absM}
+\end{gather}
+heat capacity;
+\begin{gather}
+C_v = -\frac{\beta^2}{k}\left(\frac{-256J^2\cosh(8J\beta)}{4\cosh(8J\beta) + 12}
+ + \frac{1024J^2\sinh(8J\beta)^2}{(12+4\cosh(8J\beta))^2}\right)
+\end{gather}
+and magnetic susceptibility;
+\begin{gather}
+\chi = -\frac{\beta^2}{k}\left(- \frac{32 J \left(4 e^{8 J \beta} + 2\right) \sinh{\left (8 J \beta \right )}}{
+\left(4 \cosh{\left (8 J \beta \right )} + 12\right)^{2}} 
++ \frac{32 J e^{8 J \beta}}{4 \cosh(8 J \beta) + 12}\right)
+\end{gather}
+The heat capacity and magnetic susceptibility follows from the derivative 
+of $\expval{E}$ and $\expval{\abs{\magM}}$.
+
+\subsection{1-D Ising model}
+Solutions for the Ising model in one dimension in the 
+thermodynamic limit are known, \cite{PB94}. 
+
+\begin{equation}
+\frac{U}{J} = -N \tanh \left( \frac{J}{k_B T} \right) = -N \frac{e^{J/k_B T}-e^{-J/k_B T} }{e^{J/k_B T}+ e^{-J/k_B T} } =  \begin{cases} N, \quad k_B T \to 0 \\ 0, \quad  k_B T \to \infty \end{cases}
+\end{equation}
+
+The specific heat per particle and the magnetisation are given by 
+
+\begin{equation}
+C(T) = \frac{1}{N} \frac{dU}{dT} = \frac{(J/k_B T)^2}{cosh^2 (J/k_B T)}
+\end{equation}
+\begin{equation}
+\magM(T) = \frac{N e^{J / k_B T} sinh(B/k_B T) }{ \sqrt{ e^{2J/k_B T} sinh^2 (B/k_B T) + e^{-2J/ k_B T}  } }
+\end{equation}
+
+\subsection{2-D Ising model}
+There are known analytical solution to the two dimensional model
+as well \cite{KH87},
+\begin{equation}
+\magM (T) = \begin{cases} 0, \quad T > T_C \\ \frac{(1+z^2)^{1/4} (1-6z^2 + z^4 )^{1/8} }{(1-z^2)^{1/2}}, \quad T < T_C \end{cases}
+\end{equation}
+\begin{equation}
+k T_C/J = \frac{2}{\ln(1+ \sqrt{2}) } \approx 2.269
+\end{equation}
+
+here $T_C$ is the \emph{Curie temperature} and $z = e^{-2J/k_B T}$. This result was originally derived by Lars Onsager.
+
+\section{Implementation/Numerical}
+
+The numerical model of the Ising model has been programmed in C++ and is 
+available in the repository given in the introduction.
+Most of the program code is well documented, and is available in the 
+repository given above. The classes are tested using unit tests 
+implemented in Catch, \url{https://github.com/philsquared/Catch}.
+
+In the program a lattice class with periodic boundary conditions is given,
+so access of an element follows the requirement in \eqref{eq:boundary}.
+The energy of an element in the 
+lattice and the total energy is calculated from the definition
+of the energy, \eqref{eq:Esum}.
+
+As a bonus a small program to plot the Ising model live is included. 
+This allows one to see how the domains are connected to the temperature.
+This program is available by running \emph{make animation}, and running 
+the executable.
+
+
+\subsection{The metropolis algorithm}
+
+The probability of transition from i to j 
+is modelled by the Boltzmann coefficient
+\begin{gather}
+w_j = \exp(-\beta (E_i - E_j))
+\end{gather}
+This suggest the following probabilities for moving to this state:
+\begin{gather}
+p = \begin{cases}
+1 \quad\text{ if }  E_i - E_j \le 0\\
+\exp(-\beta \Delta E) \text{ else}
+\end{cases}
+\label{eq:transition}
+\end{gather}
+This probability is compared with a random number generated from 
+the computer. To avoid computing this exponential for each new state,
+the total transition is modelled by flipping a single spin. The energy 
+difference between the two microstates is computed by considering 
+a a spin $S_0$ surrounded by $S_1,S_2,S_3, S_4$, as in figure 
+\ref{fig:spin_neighbours}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.2]{pics/full_lattice.png}
+\caption{ Illustration of $S_0$ and its "nearest neighbours".}
+\label{fig:spin_neighbours}
+\end{figure}
+
+This gives a flip of spin $s_0$ results in a n
+energy-difference of the lattice which is
+ -2 times the energy of $s_0$.
+\begin{gather}
+\Delta E = -2s_0(s_1 + s_2 + s_3 + s_4)
+\end{gather}
+This is clearly quantized, and the exponential function in 
+\eqref{eq:transition} is precomputed to save computations.
+
+
+This can be summarized in the following algorithm:
+\begin{algorithm}
+\begin{enumerate}[label=\arabic*)]
+\item Choose start configuration. Common choices of the Ising model 
+are random ($T= \infty$) and ordered ($T= 0$). 
+\item Pick a random particle, $s_0$ by drawing two random integers,
+$x$ and $y$ in the lattice domain.
+\item Suggest a spin-flip and compute possible change in 
+energy $\Delta E$.
+\begin{align*} 
+\Delta E = -2s_0(s_1+s_2+s_3+s_4), \quad \Delta E \in \{-8,-4,0,4,8 \} 
+\end{align*} 
+\item \textsc{If} $\Delta E \leq 0 \quad \to$ Accept spin-flip. \\
+\textsc{Else} Draw random number, $r \in [0,1]$ \\
+\textsc{	If} $r \leq exp(-\Delta E \beta ) \quad \to$ Accept spin-flip. \\
+\textsc{Else} $\quad \to$ Reject flip. 
+
+\item Repeat step 2) - 4) long enough for the system to be 
+uncorrelated.
+
+\item Collect data of interest. 
+
+\item Repeat step 2) - 6). 
+\end{enumerate}
+\end{algorithm}
+
+\subsubsection{Correlation time}
+If the measurements are done as soon as a flip is tried, the system has 
+not changed enough to represent a completely new independent 
+measurement. It is therefore required that at least a certain amount 
+of flips has been tried before sampling. This correlation time should 
+at least be the amount of spins in the system. This is one Monte Carlo 
+cycle. 
+
+
+\subsubsection{Choice of random number generator}
+The pseudo random number generator used for the simulations in 
+this report is the Mersenne Twister engine
+instantiated with the parameters of 
+\emph{Mersenne Twister 19937 generator} seeded with the time.
+This generator is stored in each model, which makes 
+parallelisation trivial.
+
+The Mersenne Twister is available in the \texttt{<random>} header 
+of the standard
+library in C++ and has a period of the \emph{Mersenne number},
+$2^{(n-1)w}-1$.
+The instantiation chosen gives $w=32$ and $n=624$, and a period which is 
+far larger than the minimum requirement.
+
+\subsection{Hot start and cold start}
+The system can not be started in the most likely state, an as such two 
+approximations are used. The first one sets all spins to be pointing in 
+the same direction, which creates the lowest energy. This is the 
+low temperature start, as the system is in the most likely state 
+(ground state) for low temperatures. The other approach is to set 
+all spins randomly, which is the high temperature approach, where 
+all states are equally possible.
+
+If a system is started with a random orientation it can have problems 
+reaching the lowest state. There are areas with metastability, where 
+there is a formation of magnetic domains, bands which crosses the lattice.
+To break this up the temperature needs to be turned a little higher to 
+increase the chance for the system to decrease in energy. The system 
+needs to be thermally shaken.
+
+An example of the formation of magnetic domains is visible in 
+figure \ref{fig:mag_domain}, where the band is crossing the periodic 
+boundary. All the simulations are therefore started with an ordered
+set up.
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/mag_domain.png}
+\caption{Example of a magnetic domain for $T = \frac{1}{10}$. Black 
+and white are two different spin orientations}
+\label{fig:mag_domain}
+\end{figure}
+
+
+
+\subsection{Computing thermodynamic properties}
+The different thermodynamic properties of interest were computed 
+according to the formulas \eqref{eq:Esum}, \eqref{eq:Msum} and
+some modified formulas for the specific heat and magnetic susceptibility
+are used. All these quantities are computed per particle. The 
+sampling is repeated many times to obtain a reasonable mean.
+
+The formulas for specific heat and magnetic susceptibility can be 
+justified by physical means, where $\sigma$ gives 
+the changes the small perturbations in temperature when a flip happens.
+The difference will be smaller if the system is tightly bound, and it 
+does not induce a big change in the energy or magnetisation.
+
+\subsubsection{Specific heat}
+\begin{equation}
+C_v = \beta^2L^2\left(\expval{E^2} - \expval{E}^2\right)
+\end{equation}
+
+\subsubsection{Magnetic susceptibility}
+\begin{equation}
+\chi = \beta^2 L^2 \left(\expval{\magM^2} - \expval{\magM}^2\right)
+\end{equation}
+
+
+
+\subsection{Finite size scaling}
+\label{subsec:Tc}
+
+Near $T_C$ we can characterize the behaviour of many physical quantities
+by a power law behaviour.
+As an example the mean magnetization is given by
+\begin{equation}
+  \langle {\cal M}(T) \rangle \sim \left(T-T_C\right)^{\beta},
+\end{equation}
+where $\beta=1/8$ is a so-called critical exponent. A similar relation
+applies to the heat capacity 
+\begin{equation}
+  C_V(T) \sim \left|T_C-T\right|^{\alpha},
+\end{equation}
+and the susceptibility
+\begin{equation}
+  \chi(T) \sim \left|T_C-T\right|^{\gamma},
+\end{equation}
+with $\alpha = 0$ and $\gamma = 7/4$.
+Another important quantity is the correlation length, which is expected
+to be of the order of the lattice spacing for $T>> T_C$. Because the spins
+become more and more correlated as $T$ approaches $T_C$, the correlation
+length increases as we get closer to the critical temperature. The divergent
+behavior of $\xi$ near $T_C$ 
+is
+\begin{equation}
+  \xi(T) \sim \left|T_C-T\right|^{-\nu}.
+  \label{eq:xi}
+\end{equation}
+A second-order phase transition is characterized by a
+correlation length which spans the whole system.
+Since we are always limited to a finite lattice, $\xi$ will
+be proportional with the size of the lattice. 
+Through so-called finite size scaling relations
+it is possible to relate the behaviour at finite lattices with the 
+results for an infinitely large lattice.
+The critical temperature scales then as
+\begin{equation}
+ T_C(L)-T_C(L=\infty) = aL^{-1/\nu},
+ \label{eq:tc}
+\end{equation}
+for a constant, $a$ and  $\nu$ \cite{MHJ}. 
+
+
+\subsection{Equilibration}
+In order to find out how many steps are needed to to reach the most likely
+state, we look at a 
+$20 \cross 20$-lattice for different temperatures,
+for both an ordered start configuration
+and a random start configuration. 
+This is done by an "by the eye"-approach, simply plotting the 
+magnetisation and energy as a function of Monte Carlo cycles and see 
+where they have only small fluctuations around some mean value. This is 
+later used to as the starting point for gathering the data.
+
+The flips needed before equilibrium has been reached is 
+called \emph{thermalisation}. The number of accepted spin-flips as 
+function of Monte Carlo cycles is also plotted to find the significance 
+this has on the equilibrium.
+
+\section{Results}
+
+\subsection{Numerical and analytical results for 2x2-case}
+
+In \cref{fig:aE,fig:aM,fig:acv,fig:achi}
+ the analytical expressions for the 2x2-case is compared to the numerical.
+The energy from the Ising model is closely following the analytical 
+expression, especially for low temperatures. For higher temperatures
+the energy tends to deviate from the analytical expression. The 
+numerical magnetisation is following the expression for low 
+temperatures, but does not fall off as rapidly as the analytical result.
+
+The specific heat for the numerical model closely resembles the analytical
+expression. The discrepancy between the analytical result and numerical 
+expression is due to numerical artefacts. The magnetic susceptibility
+is significantly off. The reason for this has not been discovered.
+
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/aE.png}
+\caption{Analytical and numerical result for the energy 
+of a 2x2 Ising model}
+\label{fig:aE}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/aM.png}
+\caption{Analytical and numerical result for the magnetisation 
+of a 2x2 Ising model}
+\label{fig:aM}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/acv.png}
+\caption{Analytical and numerical result for the heat capacity 
+of a 2x2 Ising model}
+\label{fig:acv}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/achi.png}
+\caption{Analytical and numerical result for the magnetic susceptibility
+of a 2x2 Ising model}
+\label{fig:achi}
+\end{figure}
+
+
+
+
+\subsection{Cold start and hot start}
+
+The results for the different start configurations are visible 
+in \cref{fig:EM_low_T,fig:EM_high_T}. For low 
+temperatures the ordered system starts out in the most likely state. For 
+the unordered system to enter the same state, it needs about 30000 total 
+flips, or about 75 trial flips per site (Monte Carlo cycles) 
+to enter this state.
+
+If the acceptances are compared, it 
+results in the figures \ref{fig:ca_low_T} and \ref{fig:ca_high_T}.
+
+
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/cEM1.png}
+\caption{Energy and magnetisation as a function of Monte Carlo cycles
+for $\tilde{T}$ = 1}
+\label{fig:EM_low_T}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/cA1.png}
+\caption{Accumulated acceptance 
+for $\tilde{T}$= 1. MC cycles is the amount of flips tried}
+\label{fig:ca_low_T}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{{pics/cEM2.4}.png}
+\caption{Energy and magnetisation as a function of Monte Carlo cycles
+for $\tilde{T}$= 2.4}
+\label{fig:EM_high_T}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{{pics/cA2.4}.png}
+\caption{Acumulated acceptance 
+for $\tilde{T}$= 2.4. MC cycles is the amount of flips tried}
+\label{fig:ca_high_T}
+\end{figure}
+
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.10]{pics/equilibrium_different_temperatures.png}
+\caption{Equilibrium configuration for different 
+temperatures, $\tilde{T}$. Here a $30 \times 30$ lattice for 
+$\tilde{T} \in\{1.0, 2.0, 2.2, 2.3, 3.0\}$. One can see the behaviour of 
+the system change close to the critical temperature where the phase 
+transition happens. After the phase transition all magnetization is gone.} 
+\label{fig:equilibrium_T}
+\end{figure}
+
+\subsection{Computing the thermodynamic properties}
+
+The probabilities of the different energies are in figure 
+\ref{fig:dT1} and \ref{fig:dT2.4}, where 50000 samplings
+has been made.
+
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/dT=1.png}
+\caption{Probabilities for the different energies for $\tilde{T}$ = 1}
+\label{fig:dT1}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\figurewidth]{pics/{dT=2.4}.png}
+\caption{Probabilities for the different energies for $\tilde{T}$ = 2.4}
+\label{fig:dT2.4}
+\end{figure}
+
+
+\Cref{fig:e20,fig:e40,fig:e60,fig:e80,fig:e100,fig:e200} display the 
+thermodynamic properties for changing lattice sizes.
+
+\begin{figure}
+\centering
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=\textwidth]{pics/e20.png}
+\caption{20x20 lattice}
+\label{fig:e20}
+\end{subfigure}
+%
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{pics/e40.png}
+\caption{40x40 lattice}
+\label{fig:e40}
+\end{subfigure}
+
+\begin{subfigure}{0.49\textwidth}
+\includegraphics[width=\textwidth]{pics/e60.png}
+\caption{60x60 lattice}
+\label{fig:e60}
+\end{subfigure}
+%
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{pics/e80.png}
+\caption{80x80 lattice}
+\label{fig:e80}
+\end{subfigure}
+
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{pics/e100.png}
+\caption{100x100 lattice}
+\label{fig:e100}
+\end{subfigure}
+%
+\begin{subfigure}{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{pics/e200.png}
+\caption{200x200 lattice, $C_v$ is miscalculated due to overflow}
+\label{fig:e200}
+\end{subfigure}
+
+\caption{Energy, magnetisations, specific heat and magnetic 
+susceptibility for differently sized lattices}
+\label{fig:EM}
+\end{figure}
+
+\subsubsection{The critical temperature and finite size scaling}
+We will now see how close we can come to Lars Onsager's exact result 
+of the critical temperature using the theory of finite size scaling from 
+section \ref{subsec:Tc}.
+
+From equation 3.10, using $\nu = 1$, having computed $T_C(L), L \in \{20,40,60,80 \}$ we have four equations and two unknowns. That means we can calculate sevral approximations for $a$, simply by subtracting one equation from the other. Obtaining the following expression for $a$:
+\begin{equation}
+a = \frac{T_C(L_j)-T_C(L_i)}{L_j - L_i}
+\end{equation}
+
+ We can do this for all the combinations of equation sets, and then 
+ compute an average value of $a$. 
+\begin{table}[!h]
+\caption{ $T_C$ for different lattice sizes. The values for $T_C (L)$ 
+where gathered by locating the peak in susceptibility and reading off 
+the graphs.  }
+\begin{center}
+\vspace{2mm}
+\begin{tabular}{| c | c | c |}
+	\hline
+	L  & $T_C(L)$  \\		\hline		
+	$20$ & $2.34$ \\
+    $40$ & $2.31$ \\
+    $60$ & $2.32$ \\
+    $80$ & $2.27$ \\
+  \hline
+\end{tabular}
+\end{center}
+\end{table} 
+
+Finally, we can compute $T_C(L=\infty)$ using equation 3.10 and the numerical results above. Running the python script \texttt{finite\_size\_scaling.py} using the results from table 1 gives the following result:
+
+\begin{framed}
+Finite size scaling approximation of T\_c:  2.27001284722 \\
+Relative error:  0.00044638484893
+\end{framed}
+
+We have come very close to Lars Onsager's original result of
+$T_C = 2.269$. 
+
+
+\subsection{Reproduction of results}
+
+Benchmark calculations along with the programs used are available 
+along with the program. These are available under the Reproduction folder.
+This requires setting the variable
+\emph{global\_seed} in \emph{main.cpp} to 42. More information is included
+in the README in this folder. The seed for the figures in the report are 
+set by the time of the runs.
+
+\section{Discussion}
+
+\subsection{Analytical and numerical 2x2}
+
+The close relation between the analytical and numerical result in 
+\cref{fig:aE,fig:acv} show a strong coupling between statistical 
+physics and our model. Our system should therefore closely follow 
+the ideal model proposed. The discrepancies in \cref{fig:aE,fig:achi}
+shows that the magnetisation of the system differs significantly 
+from the result from statistical physics. We believe this is due to an 
+error in the expression \ref{eq:absM}, which gives the wrong analytical 
+expression.
+
+
+\subsection{Hot and cold start}
+These show that the ordered and unordered state has the same flip-rate for 
+high temperatures. The ordered start does start out with a slightly higher
+flip-rate, although it quickly reaches the constant acceptance rate.
+
+For low temperatures the random start has a very high
+acceptance rate, which slows down as it reaches the most likely state.
+Thereafter the ordered and random start shows the same flip-rate.
+
+The flip-rate is thus a good indicator of when the system has reached the 
+equilibrium phase. If a metastable situation is reached these two will 
+not coincide, as a metastable state is more likely to flip than a stable
+state.
+
+\subsection{Thermodynamic properties}
+For a temperature of 1, we get that
+the lowest energy level is the most likely. The next energy level has a 
+probability of 0.1, and the next one is even lower than this. 
+Comparing with Boltzmann factor for a flip (which has energy 
+$\Delta E = 8$) we see that the first state is over-represented.
+
+A temperature of 2.4 gives a larger spread in the energy, with a 
+peak around $E = -500$ and a large spread. This resembles a 
+Gaussian distribution. With an increasing number of lattice sites 
+we expect the results from statistical physics to align, and it should 
+really be Gaussian.
+
+If \cref{fig:e20,fig:e40,fig:e60,fig:e80,fig:e100,fig:e200}
+thermodynamic properties go through drastic changes in the interval
+$\tilde{T}\in (2.0,2.4)$. This is the trace of the phase transition.
+The magnetisation goes to zero quickly as the energy increases. The 
+cliff of the magnetisation gets steeper with the increasing temperature.
+
+Both the specific heat and magnetic susceptibility changes rapidly 
+around the critical temperature. This clearly show some kind of phase
+transition, with $C_v$ and $\chi$ getting narrower and higher. The 
+decrease towards the analytical $T_c$ gives the approximation to 
+the critical temperature, which is in clear agreement with the 
+analytical result from Onsager.
+
+
+\subsection{Visualisation of Ising system}
+
+With the help of the program to visualise the system, we can see the 
+system by eye. For temperatures around 1 we can clearly see how the 
+lattice gets ''devoured'' by one spin-type, or in some cases the 
+magnetic domains (\ref{fig:mag_domain}) occurs. Temperatures well 
+above the critical temperature looks completely random, with no 
+resemblance of clumping. With temperatures around $T_c$ the clumping 
+of domains happens, but they seem to fade away or float around the 
+lattice. This can be seen as quite mesmerising, and is recommended 
+if some therapy is required.
+
+\section{Conclusion}
+
+The Ising model has been implemented rather successfully, and the 
+phase transition and critical temperature is discovered. The results 
+between the results from statistical physics and the numerical 
+integration used in here coincides, and we get very good results for 
+the critical temperature, $T_c = 2.27001284722$, which only deviates 
+from the result from statistical physics in the thermodynamic limit
+with a relative error $0.0004$.
+
+
+
+\begin{thebibliography}{9}
+\bibitem{PB94}
+Plischke, M. and Bergersen, B. 1994, \emph{Equilibrium statistical physics}, World Scientific Pub. Co., Singapore.
+
+
+\bibitem{KH87}
+Huang, K. 1987, \emph{Statistical mechanics}, Wiley, New York. 
+
+
+\bibitem{MHJ}
+Hjort-Jensen,M., 2015. \emph{Project 4}, accessible at Github: 
+\url{https://github.com/mhjensen} .
+
+\end{thebibliography}
+
+
+\end{document}

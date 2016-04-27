@@ -1,0 +1,9 @@
+200 : size of system
+0 6 : limits of rho
+false : two electrons
+6.953e-310 : omega_r
+
+2.93272
+6.89778
+10.8704
+
